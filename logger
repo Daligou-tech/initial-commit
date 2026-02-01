@@ -1,0 +1,7 @@
+export async function logCall(callSid, data) {
+  console.log({
+    callSid,
+    timestamp: new Date().toISOString(),
+    data
+  });
+}
