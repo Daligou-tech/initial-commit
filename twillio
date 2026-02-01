@@ -1,0 +1,36 @@
+import express from "express";
+import dotenv from "dotenv";
+import twilio from "twilio";
+
+import { runAI } from "./ai/agent.js";
+import { validateRules } from "./rules/engine.js";
+import { logCall } from "./logging/logger.js";
+
+dotenv.config();
+
+const app = express();
+app.use(express.urlencoded({ extended: false }));
+
+app.post("/voice", async (req, res) => {
+  const speech = req.body.SpeechResult || "";
+  const callSid = req.body.CallSid;
+
+  const aiResult = await runAI(speech);
+
+  if (!validateRules(aiResult)) {
+    const twiml = new twilio.twiml.VoiceResponse();
+    twiml.say("Please hold while I transfer you.");
+    twiml.dial("+15551234567");
+    return res.type("text/xml").send(twiml.toString());
+  }
+
+  await logCall(callSid, aiResult);
+
+  const twiml = new twilio.twiml.VoiceResponse();
+  twiml.say(aiResult.text);
+  twiml.gather({ input: "speech", action: "/voice", speechTimeout: "auto" });
+
+  res.type("text/xml").send(twiml.toString());
+});
+
+app.listen(process.env.PORT || 3000);
