@@ -1,0 +1,7 @@
+import rules from "./config.json" assert { type: "json" };
+
+export function validateRules(state) {
+  if (state.confidence < rules.minConfidence) return false;
+  if (state.urgency === "emergency") return true;
+  return rules.businessHoursOpen;
+}
